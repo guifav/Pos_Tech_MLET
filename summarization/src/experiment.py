@@ -50,19 +50,18 @@ class Experiment:
             )
         return model_info
 
-    def evaluate(self, model_uri: str, test_df: pd.DataFrame) -> Dict[str, int]:
+    def evaluate(self, model_info: ModelInfo, test_df: pd.DataFrame) -> Dict[str, int]:
         """Evaluate model.
 
         Args:
-            model_uri (str): MLFlow model uri for evaluation.
+            model_info (ModelInfo): MLFlow ModelInfo for evaluation.
 
         Returns:
             Dict[str, int]: Metrics.
         """
-        run_id = model_uri.split("/")[1]
-        with mlflow.start_run(run_id=run_id):
+        with mlflow.start_run(run_id=model_info.run_id):
             results = mlflow.evaluate(
-                model_uri,
+                model_info.model_uri,
                 test_df,
                 evaluators="default",
                 model_type="text-summarization",

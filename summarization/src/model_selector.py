@@ -17,7 +17,7 @@ if __name__ == "__main__":
     for run_name, model in models.items():
         exp = Experiment(model=model, title=title)
         model_info = exp.track(run_name=run_name)
-        metrics = exp.evaluate(model_info.model_uri, test_df=test_df)
+        metrics = exp.evaluate(model_info, test_df=test_df)
         results.append(metrics[key_metric])
     best_run_name = list(models)[results.index(max(results))]
     reg = Register(title=title)
