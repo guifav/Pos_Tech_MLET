@@ -6,6 +6,14 @@ import numpy as np
 import mlflow
 import mlflow.pytorch
 
+#a melhorar (refatorar):
+# - Hiperparâmetros
+# - Sistema de Log (tempo de execução, avisos, errors)
+# - Desacoplamento dos Módulos
+# - Testes unitários
+# - Documentação
+
+
 # Set device configuration
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -23,10 +31,7 @@ num_samples = 10000  # Number of artificial samples to generate
 
 # Generate artificial data
 def generate_artificial_data(num_samples, sequence_length, input_size):
-    # Generate random sequences of data
     X = torch.randn(num_samples, sequence_length, input_size)
-
-    # Generate random labels (regression target)
     y = torch.randn(num_samples, 1)
 
     return X, y
@@ -55,12 +60,18 @@ def get_inner_layrs(input_size, hidden_size, num_layers, output_size):
 
 # LSTM model
 class LSTM(nn.Module):
+
     def __init__(self, input_size, hidden_size, num_layers, output_size):
         super().__init__()
         self.hidden_size = hidden_size
         self.num_layers = num_layers
 
-        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
+        self.lstm = nn.LSTM(
+            input_size,
+            hidden_size,
+            num_layers,
+            batch_first=True
+        )
 
         self.model = nn.Sequential(
             nn.Sigmoid(),

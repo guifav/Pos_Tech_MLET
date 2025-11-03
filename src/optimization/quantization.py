@@ -27,12 +27,24 @@ def quantize(values, levels):
 class SimpleNN(nn.Module):
     def __init__(self):
         super(SimpleNN, self).__init__()
-        self.fc1 = nn.Linear(10, 10)
-        self.fc2 = nn.Linear(10, 10)
+        self.fc1 = nn.Linear(10, 100)
+        self.fc2 = nn.Linear(100, 1000)
+        self.fc3 = nn.Linear(1000, 5000)
+        self.fc4 = nn.Linear(5000, 2500)
+        self.fc5 = nn.Linear(2500, 1250)
+        self.fc6 = nn.Linear(1250, 625)
+        self.fc7 = nn.Linear(625, 312)
+        self.fc8 = nn.Linear(312, 156)
+        self.fc9 = nn.Linear(156, 78)
+        self.fc10 = nn.Linear(78, 39)
+        self.fc11 = nn.Linear(39, 19)
+        self.fc12 = nn.Linear(19, 10)
 
     def forward(self, x):
         x = torch.relu(self.fc1(x))
-        x = self.fc2(x)
+        x = torch.relu(self.fc2(x))
+        x = torch.relu(self.fc3(x))
+        x = self.fc4(x)
         return x
 
 # Instantiate the neural network and print its structure
