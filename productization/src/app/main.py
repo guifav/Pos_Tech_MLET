@@ -4,6 +4,7 @@ Modulo para previsão de preços de ações
 
 import os
 from pathlib import Path
+from concurrent.futures import ProcessPoolExecutor, Future
 
 from fastapi import FastAPI, HTTPException, Request, Depends, status
 from fastapi.encoders import jsonable_encoder
@@ -79,6 +80,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
+
+TRAINING_EXECUTOR: ProcessPoolExecutor = ProcessPoolExecutor()
+_ACTIVE_TRAINING_JOBS: set[Future] = set()
+
+
+def _cleanup_future(future: Future) -> None:
+    """Remove finished training jobs from the active set."""
+    _ACTIVE_TRAINING_JOBS.discard(future)
 
 
 @app.exception_handler(RequestValidationError)
@@ -197,16 +207,36 @@ async def startup_check() -> dict[str, str]:
 
 
 @app.post("/train", tags=["Treinamento"], summary="Train a new LSTM model")
-async def train_model(strategy: str, params: train.TrainingParams) -> dict[str, Path]:
+async def train_model(strategy: str, params: train.TrainingParams) -> dict[str, str]:
     """
     train_model Endpoint to initiate the training of a new LSTM model.
 
     Returns:
-        dict[str, str]: A simple dictionary indicating the training has started.
+        dict[str, str]: Information about the scheduled training job.
     """
-    strategy_class = getattr(train, strategy)(params)
-    path = train.TrainerContext(strategy_class).train()
-    return {"model_path": path}
+
+    if not hasattr(train, strategy):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unknown training strategy '{strategy}'."
+        )
+
+    strategy_instance = getattr(train, strategy)(params)
+    context = train.TrainerContext(strategy_instance)
+
+    future: Future = TRAINING_EXECUTOR.submit(context.train)
+    _ACTIVE_TRAINING_JOBS.add(future)
+    future.add_done_callback(_cleanup_future)
+
+    train_module_dir = Path(train.__file__).resolve().parent
+    mlflow_directory = train_module_dir / "mlruns"
+    expected_model_path = train_module_dir / ".models" / f"{strategy_instance.name}.pt"
+
+    return {
+        "message": "Training started. The model will be available after the run in the MLflow directory.",
+        "mlflow_directory": str(mlflow_directory),
+        "expected_model_path": str(expected_model_path)
+    }
 
 
 @app.post("/infer", tags=["Inferencia"], summary="Make a prediction using the LSTM model")
