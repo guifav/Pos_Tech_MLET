@@ -11,6 +11,7 @@ import torch
 import torch.nn as nn
 import torch.quantization
 from transformers import DistilBertForSequenceClassification, DistilBertTokenizer
+
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import MLFlowLogger
 from pytorch_lightning.callbacks.quantization import QuantizationAwareTraining
@@ -22,10 +23,12 @@ import mlflow.pytorch
 # -----------------------------
 class QATModule(pl.LightningModule):
 
-    def __init__(self,
-                 model_name: str = "distilbert-base-uncased",
-                 num_labels: int = 2,
-                 lr: float = 2e-5):
+    def __init__(
+            self,
+            model_name: str = "distilbert-base-uncased",
+            num_labels: int = 2,
+            lr: float = 2e-5
+        ):
         """
         - model_name: HuggingFace model to load
         - num_labels: number of classes

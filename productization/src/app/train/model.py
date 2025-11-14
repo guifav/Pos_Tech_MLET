@@ -4,6 +4,7 @@ It includes various training strategies, data pipelines, and model factories.
 """
 
 from typing import override
+from dataclasses import dataclass
 
 import torch
 from torch import nn
@@ -13,6 +14,18 @@ from app.model.data import DataPipeline, NoProcessingSingle, NoProcessingMultipl
 from app.model.lstm import LSTMFactory
 from abc import ABC, abstractmethod
 from pathlib import Path
+
+
+@dataclass
+class TrainingParams:
+    tickers: list[str]
+    period: str
+    seq_len: int
+    num_epochs: int
+    learning_rate: float
+    batch_size: int
+    layer_config: dict
+    lstm_params: dict
 
 
 class LSTMLightningModule(pl.LightningModule):
@@ -98,7 +111,6 @@ class LSTMLightningModule(pl.LightningModule):
         """
         return torch.optim.Adam(self.model.parameters(), lr=self.lr)
 
-
 class TrainingStrategy(ABC):
     """
     Abstract base class for defining training strategies.
@@ -112,6 +124,31 @@ class TrainingStrategy(ABC):
         get_training_params: Returns the training parameters for the strategy.
     """
 
+    def __init__(self, training_params: TrainingParams):
+        """
+        Initialize the RangeClusterComplexStrategy.
+
+        Args:
+            tickers: List of tickers for training.
+            period: Training period.
+            seq_len: Sequence length for the LSTM.
+            num_epochs: Number of training epochs.
+            learning_rate: Learning rate for the optimizer.
+            batch_size: Batch size for training.
+            layer_config: Configuration for LSTM layers.
+            lstm_params: Parameters for the LSTM model.
+        """
+        self.params = dict(
+            tickers=training_params.tickers,
+            period=training_params.period,
+            seq_len=training_params.seq_len,
+            num_epochs=training_params.num_epochs,
+            learning_rate=training_params.learning_rate,
+            batch_size=training_params.batch_size
+        )
+        self.layer_config = training_params.layer_config
+        self.lstm_params = training_params.lstm_params
+
     @property
     @abstractmethod
     def name(self) -> str:
@@ -121,7 +158,6 @@ class TrainingStrategy(ABC):
         Returns:
             str: Name of the strategy.
         """
-        pass
 
     @abstractmethod
     def get_data_pipeline(self) -> DataPipeline:
@@ -131,7 +167,6 @@ class TrainingStrategy(ABC):
         Returns:
             DataPipeline: Configured data pipeline.
         """
-        pass
 
     @abstractmethod
     def get_model_factory(self) -> LSTMFactory:
@@ -141,7 +176,6 @@ class TrainingStrategy(ABC):
         Returns:
             LSTMFactory: Configured model factory.
         """
-        pass
 
     @abstractmethod
     def get_training_params(self) -> dict:
@@ -151,7 +185,6 @@ class TrainingStrategy(ABC):
         Returns:
             dict: Training parameters.
         """
-        pass
 
 class NoProcessingSimpleStrategy(TrainingStrategy):
     """
@@ -168,7 +201,7 @@ class NoProcessingSimpleStrategy(TrainingStrategy):
         lstm_params: Parameters for the LSTM model.
     """
 
-    def __init__(self, tickers, period, seq_len, num_epochs, learning_rate, batch_size, layer_config, lstm_params):
+    def __init__(self, training_params: TrainingParams):
         """
         Initialize the NoProcessingSimpleStrategy.
 
@@ -183,17 +216,7 @@ class NoProcessingSimpleStrategy(TrainingStrategy):
             lstm_params: Parameters for the LSTM model.
         """
         self._name = "NoProcessingSimple"
-        self.params = dict(
-            tickers=tickers,
-            period=period,
-            seq_len=seq_len,
-            num_epochs=num_epochs,
-            learning_rate=learning_rate,
-            batch_size=batch_size
-        )
-
-        self.layer_config = layer_config
-        self.lstm_params = lstm_params
+        super().__init__(training_params)
 
     @property
     def name(self):
@@ -237,7 +260,7 @@ class NoProcessingSimpleStrategy(TrainingStrategy):
 class RangeClusterComplexStrategy(TrainingStrategy):
     """Training with range feature and DBSCAN clustering, using a deeper LSTM configuration."""
 
-    def __init__(self, tickers, period, seq_len, num_epochs, learning_rate, batch_size, layer_config, lstm_params):
+    def __init__(self, training_params: TrainingParams):
         """
         Initialize the RangeClusterComplexStrategy.
 
@@ -252,16 +275,7 @@ class RangeClusterComplexStrategy(TrainingStrategy):
             lstm_params: Parameters for the LSTM model.
         """
         self._name = "RangeClusterComplex"
-        self.params = dict(
-            tickers=tickers,
-            period=period,
-            seq_len=seq_len,
-            num_epochs=num_epochs,
-            learning_rate=learning_rate,
-            batch_size=batch_size
-        )
-        self.layer_config = layer_config
-        self.lstm_params = lstm_params
+        super().__init__(training_params)
 
     @property
     def name(self):
@@ -305,7 +319,7 @@ class RangeClusterComplexStrategy(TrainingStrategy):
 class NoProcessingSingleStrategy(TrainingStrategy):
     """No feature engineering, single ticker data."""
 
-    def __init__(self, tickers, period, seq_len, num_epochs, learning_rate, batch_size, layer_config, lstm_params):
+    def __init__(self, training_params: TrainingParams):
         """
         Initialize the NoProcessingSingleStrategy.
 
@@ -320,16 +334,7 @@ class NoProcessingSingleStrategy(TrainingStrategy):
             lstm_params: Parameters for the LSTM model.
         """
         self._name = "NoProcessingSingle"
-        self.params = dict(
-            tickers=tickers,
-            period=period,
-            seq_len=seq_len,
-            num_epochs=num_epochs,
-            learning_rate=learning_rate,
-            batch_size=batch_size
-        )
-        self.layer_config = layer_config
-        self.lstm_params = lstm_params
+        super().__init__(training_params)
 
     @property
     def name(self): return self._name
@@ -365,7 +370,8 @@ class NoProcessingSingleStrategy(TrainingStrategy):
 
 class NoProcessingMultipleStrategy(TrainingStrategy):
     """No feature engineering, multiple tickers data."""
-    def __init__(self, tickers, period, seq_len, num_epochs, learning_rate, batch_size, layer_config, lstm_params):
+
+    def __init__(self, training_params: TrainingParams):
         """
         Initialize the NoProcessingMultipleStrategy.
 
@@ -380,16 +386,7 @@ class NoProcessingMultipleStrategy(TrainingStrategy):
             lstm_params: Parameters for the LSTM model.
         """
         self._name = "NoProcessingMultiple"
-        self.params = dict(
-            tickers=tickers,
-            period=period,
-            seq_len=seq_len,
-            num_epochs=num_epochs,
-            learning_rate=learning_rate,
-            batch_size=batch_size
-        )
-        self.layer_config = layer_config
-        self.lstm_params = lstm_params
+        super().__init__(training_params)
 
     @property
     def name(self): return self._name
@@ -425,7 +422,8 @@ class NoProcessingMultipleStrategy(TrainingStrategy):
 
 class RangeSingleStrategy(TrainingStrategy):
     """Daily range feature, single ticker data."""
-    def __init__(self, tickers, period, seq_len, num_epochs, learning_rate, batch_size, layer_config, lstm_params):
+
+    def __init__(self, training_params: TrainingParams):
         """
         Initialize the RangeSingleStrategy.
 
@@ -440,16 +438,7 @@ class RangeSingleStrategy(TrainingStrategy):
             lstm_params: Parameters for the LSTM model.
         """
         self._name = "RangeSingle"
-        self.params = dict(
-            tickers=tickers,
-            period=period,
-            seq_len=seq_len,
-            num_epochs=num_epochs,
-            learning_rate=learning_rate,
-            batch_size=batch_size
-        )
-        self.layer_config = layer_config
-        self.lstm_params = lstm_params
+        super().__init__(training_params)
 
     @property
     def name(self): return self._name
@@ -485,7 +474,8 @@ class RangeSingleStrategy(TrainingStrategy):
 
 class RangeMultipleStrategy(TrainingStrategy):
     """Daily range feature, multiple tickers data."""
-    def __init__(self, tickers, period, seq_len, num_epochs, learning_rate, batch_size, layer_config, lstm_params):
+
+    def __init__(self, training_params: TrainingParams):
         """
         Initialize the RangeMultipleStrategy.
 
@@ -500,16 +490,7 @@ class RangeMultipleStrategy(TrainingStrategy):
             lstm_params: Parameters for the LSTM model.
         """
         self._name = "RangeMultiple"
-        self.params = dict(
-            tickers=tickers,
-            period=period,
-            seq_len=seq_len,
-            num_epochs=num_epochs,
-            learning_rate=learning_rate,
-            batch_size=batch_size
-        )
-        self.layer_config = layer_config
-        self.lstm_params = lstm_params
+        super().__init__(training_params)
 
     @property
     def name(self): return self._name
@@ -545,7 +526,8 @@ class RangeMultipleStrategy(TrainingStrategy):
 
 class RangeClusterMultipleStrategy(TrainingStrategy):
     """Daily range + clustering feature, multiple tickers data."""
-    def __init__(self, tickers, period, seq_len, num_epochs, learning_rate, batch_size, layer_config, lstm_params):
+
+    def __init__(self, training_params: TrainingParams):
         """
         Initialize the RangeClusterMultipleStrategy.
 
@@ -560,10 +542,7 @@ class RangeClusterMultipleStrategy(TrainingStrategy):
             lstm_params: Parameters for the LSTM model.
         """
         self._name = "RangeClusterMultiple"
-        self.params = dict(tickers=tickers, period=period, seq_len=seq_len,
-                           num_epochs=num_epochs, learning_rate=learning_rate, batch_size=batch_size)
-        self.layer_config = layer_config
-        self.lstm_params = lstm_params
+        super().__init__(training_params)
 
     @property
     def name(self): return self._name
@@ -614,7 +593,7 @@ class TrainerContext:
         """
         self.strategy = strategy
 
-    def train(self):
+    def train(self) -> Path:
         """
         Execute the training process using the specified strategy.
 

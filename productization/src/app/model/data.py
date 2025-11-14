@@ -25,6 +25,7 @@ class DataStrategy(ABC):
 
     Defines the interface for processing stock data into PyTorch tensors for LSTM models.
     """
+
     @abstractmethod
     def process(self, tickers: list[str], period: str, seq_len: int):
         """Process stock data and return PyTorch tensors.

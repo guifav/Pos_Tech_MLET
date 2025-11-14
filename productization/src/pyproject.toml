@@ -1,51 +1,60 @@
-[tool.poetry]
-name = "Asset Pricing Predictor"
-version = "0.1.0-alpha"
+[project]
+name = "text-generation"
+version = "0.1.0"
 description = ""
-authors = ["Ricardo Cataldi <rcataldi@microsoft.com>"]
+authors = [
+    {name = "Ricardo Cataldi",email = "rcataldi@microsoft.com"}
+]
+
 readme = "README.md"
-packages = [{include = "app", from = "."}]
+requires-python = ">=3.13, <4.0"
 
+dependencies = [
+    "pydantic",
+    "torch",
+    "torchvision",
+    "pytorch-lightning",
+    "yfinance",
+    "scikit-learn",
+    "aiohttp",
+    "fastapi",
+    "uvicorn",
+    "python-multipart",
+    "mlflow-skinny",
+    "numpy",
+    "pandas",
+]
 
-[tool.poetry.dependencies]
-python = "^3.12, <4.0"
-fastapi = "^0.115.12"
-uvicorn = "^0.34.2"
-torch = "^2.7.0"
-torchvision = "^0.22.0"
-pytorch-lightning = "^2.5.1.post0"
-mlflow = "^2.22.0"
-ray = "^2.46.0"
-yfinance = "^0.2.61"
-pandas = "^2.2.3"
-numpy = "^2.2.6"
-scikit-learn = "^1.6.1"
+[project.optional-dependencies]
+dev = [
+    "faker",
+    "pre-commit",
+    "python-dotenv",
+]
+test = [
+    "pytest",
+    "pytest-cov",
+    "pytest-asyncio",
+]
+lint = [
+    "pylint",
+    "isort",
+    "black[jupyter]>=25.1.0,<26.0.0",
+]
+mlflow = [
+    "mlflow>=3.5.0,<3.6.0",
+]
+docs = [
+    "mkdocs",
+]
 
+[tool.setuptools]
+package-dir = {"" = "."}
 
-[tool.poetry.group.dev.dependencies]
-faker = "*"
-python-dotenv = "*"
-poetry-plugin-export = "*"
-
-
-[tool.poetry.group.test.dependencies]
-pytest = "*"
-pytest-asyncio = "*"
-
-
-[tool.poetry.group.lint.dependencies]
-pylint = "*"
-black = {extras = ["jupyter"], version = "^25.1.0"}
-isort = "*"
-
-
-[tool.poetry.group.docs.dependencies]
-mkdocs = "*"
-
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["*"]
+namespaces = true
 
 [tool.pytest.ini_options]
 minversion = "7.0"
@@ -58,7 +67,6 @@ markers = [
     "async: marks tests as async (select with '-m async')",
     "slow: marks tests as slow (select with '-m slow')"
 ]
-asyncio_default_fixture_loop_scope = 'function'
 
 [tool.pylint]
 fail-under = 8.5
@@ -76,7 +84,7 @@ load-plugins = [
 
 [tool.black]
 line-length = 100
-target-version = ['py39', 'py310', 'py311', 'py312']  # Explicit Python 3.12 support
+target-version = ['py311', 'py312', 'py313']  # Explicit Python 3.13 support
 include = '\.pyi?$'
 exclude = '\.git|\.hg|\.mypy_cache|\.tox|\.venv|_build|buck-out|build|dist'
 
@@ -87,3 +95,8 @@ include_trailing_comma = true
 force_grid_wrap = 0
 use_parentheses = true
 line_length = 100
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
