@@ -1,0 +1,43 @@
+name: Sync fork with upstream
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote
+        run: |
+          UPSTREAM=$(gh api repos/${{ github.repository }} --jq '.parent.full_name')
+          git remote add upstream "https://github.com/${UPSTREAM}.git"
+          git fetch upstream
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync all branches except main
+        run: |
+          for branch in $(git branch -r | grep 'upstream/' | grep -v 'HEAD' | grep -v 'upstream/main' | sed 's|upstream/||'); do
+            echo "Syncing branch: ${branch}"
+            if git show-ref --verify --quiet "refs/remotes/origin/${branch}"; then
+              git checkout -B "${branch}" "upstream/${branch}"
+            else
+              git checkout -b "${branch}" "upstream/${branch}"
+            fi
+            git push origin "${branch}" --force
+          done
