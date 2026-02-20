@@ -4,6 +4,7 @@ import pytorch_lightning as pl
 
 
 class LoRALinear(nn.Module):
+
     def __init__(self, in_features, out_features, r=4, scaling=1.0):
         super().__init__()
         self.weight = nn.Parameter(torch.randn(out_features, in_features) * 0.02)
@@ -45,10 +46,11 @@ class LoRATransformer(pl.LightningModule):
 if __name__ == "__main__":
     from torch.utils.data import DataLoader, TensorDataset
     from pytorch_lightning import Trainer
+    print("CUDA Available:", torch.cuda.is_available())
     dataset_size, seq_length, batch_size = 500, 10, 32
     X = torch.randint(0, 1000, (dataset_size, seq_length))
     y = torch.randint(0, 1000, (dataset_size, seq_length))
     dataloader = DataLoader(TensorDataset(X, y), batch_size=batch_size)
     model = LoRATransformer()
-    trainer = Trainer(max_epochs=5)
+    trainer = Trainer(max_epochs=5) 
     trainer.fit(model, dataloader)
